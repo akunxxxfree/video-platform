@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Upload Platform</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial;
+      background: #111827;
+      color: white;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .upload-box {
+      background: #1f2937;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #1f2937;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .download-btn {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      background: #16a34a;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+    }
+
+    .progress {
+      width: 100%;
+      background: #374151;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 20px;
+      background: #22c55e;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Unlimited Video Upload</h1>
+
+  <div class="upload-box">
+    <input type="file" id="videoInput" accept="video/*">
+    <button onclick="uploadVideo()">Upload</button>
+
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <p id="status"></p>
+  </div>
+
+  <div class="grid" id="videoGrid"></div>
+</div>
+
+<script>
+async function loadVideos() {
+  const res = await fetch('/videos');
+  const videos = await res.json();
+
+  const grid = document.getElementById('videoGrid');
+  grid.innerHTML = '';
+
+  videos.forEach(video => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    card.innerHTML = `
+      <h3>${video.originalname}</h3>
+
+      <video controls>
+        <source src="/video/${video.filename}" type="video/mp4">
+      </video>
+
+      <a class="download-btn" href="/download/${video.filename}">
+        Download Video
+      </a>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+function uploadVideo() {
+  const file = document.getElementById('videoInput').files[0];
+
+  if (!file) {
+    alert('Choose video first');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('video', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload');
+
+  xhr.upload.addEventListener('progress', e => {
+    if (e.lengthComputable) {
+      const percent = (e.loaded / e.total) * 100;
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('status').innerText = Math.round(percent) + '% uploaded';
+    }
+  });
+
+  xhr.onload = () => {
+    document.getElementById('status').innerText = 'Upload Complete';
+    document.getElementById('progressBar').style.width = '0%';
+    loadVideos();
+  };
+
+  xhr.send(formData);
+}
+
+loadVideos();
+</script>
+
+</body>
+</html>
